@@ -1,5 +1,5 @@
 Design a compiler(Lexical and Parser phase) for the following hypothetical languages.
-Q2: Find the largest number using if statement
+Find the largest number using if statement
 int main()
 begin
 int n1, n2, n3;
