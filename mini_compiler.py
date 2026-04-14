@@ -1,349 +1,335 @@
-# -------------------------------
-# 1. SAMPLE INPUT PROGRAM
-# -------------------------------
-source_code = """
+import re
+from collections import defaultdict
+from graphviz import Digraph
+# NODE FOR PARSE TREE
+class Node:
+    def __init__(self, value):
+        self.value = value
+        self.children = []
+# BOX TABLE
+def print_box(headers, rows, title):
+    print(f"\n{title}:\n")
+    def format_cell(text):
+        return str(text)
+    col_widths = [len(h) for h in headers]
+    for row in rows:
+        for i in range(len(row)):
+            lines = format_cell(row[i]).split("\n")
+            for line in lines:
+                col_widths[i] = max(col_widths[i], len(line))
+    def line():
+        print("+" + "+".join("-"*(w+2) for w in col_widths) + "+")
+    def row_print(row):
+        cell_lines = [format_cell(cell).split("\n") for cell in row]
+        max_lines = max(len(c) for c in cell_lines)
+        for i in range(max_lines):
+            row_out = []
+            for j, cell in enumerate(cell_lines):
+                if i < len(cell):
+                    row_out.append(cell[i].ljust(col_widths[j]))
+                else:
+                    row_out.append("".ljust(col_widths[j]))
+            print("| " + " | ".join(row_out) + " |")
+    line()
+    row_print(headers)
+    line()
+    for r in rows:
+        row_print(r)
+    line()
+# LEXER
+def lexer(code):
+    token_spec = [
+        ('KEYWORD', r'\b(int|if|begin|end|printf|main)\b'),
+        ('RELOP', r'>|<|>=|<=|==|!='),
+        ('ID', r'[a-zA-Z_][a-zA-Z0-9_]*'),
+        ('SYMBOL', r'[(),;]'),
+        ('SKIP', r'[ \n\t]+')
+    ]
+    tok_regex = '|'.join(f'(?P<{n}>{p})' for n,p in token_spec)
+    tokens=[]
+    for m in re.finditer(tok_regex, code):
+        if m.lastgroup!='SKIP':
+            tokens.append((m.group(),m.lastgroup))
+    return tokens
+def print_parsing_table(steps):
+    print("\nPARSING STEPS:\n")
+    stack_w = 40
+    input_w = 50
+    action_w = 20
+    def split_text(text, width):
+        words = text.split()
+        lines = []
+        current = ""
+        for word in words:
+            if len(current) + len(word) + 1 <= width:
+                current += (" " + word) if current else word
+            else:
+                lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+        return lines
+    # header
+    print("+" + "-"*(stack_w+2) + "+" + "-"*(input_w+2) + "+" + "-"*(action_w+2) + "+")
+    print(f"| {'Stack'.ljust(stack_w)} | {'Input'.ljust(input_w)} | {'Action'.ljust(action_w)} |")
+    print("+" + "-"*(stack_w+2) + "+" + "-"*(input_w+2) + "+" + "-"*(action_w+2) + "+")
+    # rows
+    for stack, inp, action in steps:
+        stack_lines = split_text(stack, stack_w)
+        input_lines = split_text(inp, input_w)
+        max_lines = max(len(stack_lines), len(input_lines))
+        for i in range(max_lines):
+            s = stack_lines[i] if i < len(stack_lines) else ""
+            inp_line = input_lines[i] if i < len(input_lines) else ""
+            if i == 0:
+                print(f"| {s.ljust(stack_w)} | {inp_line.ljust(input_w)} | {action.ljust(action_w)} |")
+            else:
+                print(f"| {s.ljust(stack_w)} | {inp_line.ljust(input_w)} | {' '.ljust(action_w)} |")
+        print("+" + "-"*(stack_w+2) + "+" + "-"*(input_w+2) + "+" + "-"*(action_w+2) + "+")
+# GRAMMAR
+grammar = {
+    "S'":[["Program"]],
+    "Program":[["int","main","(",")","begin","Decl","Stmt","Stmt","Stmt","end"]],
+    "Decl":[["int","id",",","id",",","id",";"]],
+    "Stmt":[["if","(","Expr","relop","Expr",")","begin","Print","end"]],
+    "Print":[["printf","(","id",")",";"]],
+    "Expr":[["id"]],
+    "relop":[[">"]]
+}
+FIRST = {
+    "Program":"{ int }",
+    "Decl":"{ int }",
+    "Stmt":"{ if }",
+    "Print":"{ printf }",
+    "Expr":"{ id }",
+    "relop":"{ > }"
+}
+FOLLOW = {
+    "Program":"{ $ }",
+    "Decl":"{ if }",
+    "Stmt":"{ if, end }",
+    "Print":"{ end }",
+    "Expr":"{ relop, ) }",
+    "relop":"{ id }"
+}
+# LR(0) DFA
+def closure(items):
+    closure_set=set(items)
+    while True:
+        new=set()
+        for lhs,rhs,dot in closure_set:
+            if dot<len(rhs):
+                sym=rhs[dot]
+                if sym in grammar:
+                    for p in grammar[sym]:
+                        item=(sym,tuple(p),0)
+                        if item not in closure_set:
+                            new.add(item)
+        if not new: break
+        closure_set|=new
+    return closure_set
+def goto(items,sym):
+    moved=set()
+    for lhs,rhs,dot in items:
+        if dot<len(rhs) and rhs[dot]==sym:
+            moved.add((lhs,rhs,dot+1))
+    return closure(moved)
+def build_dfa():
+    start=closure({("S'",tuple(grammar["S'"][0]),0)})
+    states=[start]
+    trans={}
+    symbols=set()
+    for v in grammar.values():
+        for p in v: symbols.update(p)
+    while True:
+        added=False
+        for i,s in enumerate(states):
+            for sym in symbols:
+                g=goto(s,sym)
+                if g:
+                    if g not in states:
+                        states.append(g)
+                        added=True
+                    trans[(i,sym)]=states.index(g)
+        if not added: break
+    return states,trans
+states,trans=build_dfa()
+# LR(0) TABLE
+lr_rows=[]
+for i,s in enumerate(states):
+    items=[]
+    for lhs,rhs,dot in s:
+        rhs=list(rhs)
+        rhs.insert(dot,"•")
+        items.append(f"{lhs}→{' '.join(rhs)}")
+    lr_rows.append([f"I{i}","\n".join(items)])
+dfa_rows=[[f"I{s}",sym,f"I{d}"] for (s,sym),d in trans.items()]
+# SLR TABLE
+ACTION={}
+GOTO={}
+for (s,sym),d in trans.items():
+    if sym not in grammar:
+        ACTION[(s,sym)]=f"S{d}"
+    else:
+        GOTO[(s,sym)]=d
+for i,s in enumerate(states):
+    for lhs,rhs,dot in s:
+        if dot==len(rhs):
+            if lhs=="S'":
+                ACTION[(i,"$")]="ACC"
+            else:
+                follow = {
+                    "Program":["$"],
+                    "Decl":["if"],
+                    "Stmt":["if","end"],
+                    "Print":["end"],
+                    "Expr":[">",")"],
+                    "relop":["id"]
+                }
+                for t in follow.get(lhs,[]):
+                    ACTION[(i,t)]=f"R({lhs})"
+terms=["id","int","if","printf","end","$"]
+nonterms=list(grammar.keys())
+headers=["State"]+terms+nonterms
+rows=[]
+for i in range(len(states)):
+    row=[f"I{i}"]
+    for t in terms:
+        row.append(ACTION.get((i,t),""))
+    for nt in nonterms:
+        row.append(GOTO.get((i,nt),""))
+    rows.append(row)
+# PARSER + TREE
+def parse(tokens):
+    stack=["0"]
+    tokens.append("$")
+    i=0
+    steps=[]
+    node_stack=[]
+    while True:
+        state=int(stack[-1])
+        symbol=tokens[i]
+        action=ACTION.get((state,symbol),"")
+        stack_str=" ".join(stack)
+        input_str=" ".join(tokens[i:])
+        if action.startswith("S"):
+            steps.append([stack_str,input_str,f"Shift {symbol}"])
+            stack.append(symbol)
+            stack.append(action[1:])
+            node_stack.append(Node(symbol))
+            i+=1
+        elif action.startswith("R"):
+            lhs=action.split("(")[1].split(")")[0]
+            steps.append([stack_str,input_str,f"Reduce {lhs}"])
+            rhs=grammar.get(lhs,[[]])[0]
+            children=[]
+            for _ in range(len(rhs)):
+                if node_stack:
+                    children.insert(0,node_stack.pop())
+            new_node=Node(lhs)
+            new_node.children=children
+            node_stack.append(new_node)
+            for _ in range(len(rhs)*2):
+                if stack:
+                    stack.pop()
+            state=int(stack[-1])
+            stack.append(lhs)
+            goto_state=GOTO.get((state,lhs))
+            if goto_state is not None:
+                stack.append(str(goto_state))
+            else:
+                steps.append([stack_str,input_str,"ERROR"])
+                break
+        elif action=="ACC":
+            steps.append([stack_str,input_str,"ACCEPT"])
+            break
+        else:
+            steps.append([stack_str,input_str,"ERROR"])
+            break
+    print_parsing_table(steps)
+    return node_stack[0] if node_stack else None
+# DRAW TREE
+def draw_parse_tree(root):
+    dot=Digraph(format='png')
+    dot.attr(rankdir='TB')
+    def add(node):
+        dot.node(str(id(node)),node.value)
+        for child in node.children:
+            dot.edge(str(id(node)),str(id(child)))
+            add(child)
+    add(root)
+    dot.render("parse_tree",view=True)
+# MAIN
+code="""
 int main()
 begin
 int n1, n2, n3;
-if (n1 > n2)
+if ( n1 > n2 )
 begin
-    if (n1 > n3)
-    begin
-        printf(n1);
-    end
+printf(n1);
 end
-if (n2 > n1)
+if ( n2 > n3 )
 begin
-    if (n2 > n3)
-    begin
-        printf(n2);
-    end
+printf(n2);
 end
-if (n3 > n1)
+if ( n1 > n3 )
 begin
-    if (n3 > n2)
-    begin
-        printf(n3);
-    end
+printf(n3);
 end
 end
 """
-
-# -------------------------------
-# 2. LEXICAL ANALYZER
-# -------------------------------
-import re
-from graphviz import Digraph
-
-KEYWORDS = {"int", "main", "begin", "end", "if", "printf"}
-
-token_specification = [
-    ('NUMBER',   r'\d+'),
-    ('ID',       r'[A-Za-z_]\w*'),
-    ('OP',       r'==|>|<'),
-    ('SYMBOL',   r'[(),;]'),
-    ('SKIP',     r'[ \t\n]+'),
-    ('MISMATCH', r'.'),
+tokens=lexer(code)
+print_box(["Lexeme","Token"],tokens,"TOKEN TABLE")
+print_box(["Non-Terminal","Productions"],
+          [[k," | ".join(" ".join(p) for p in v)] for k,v in grammar.items()],
+          "GRAMMAR")
+print_box(["NT","FIRST","FOLLOW"],
+          [[k,FIRST.get(k,""),FOLLOW.get(k,"")] for k in grammar],
+          "FIRST FOLLOW")
+print_box(["State","Items"],lr_rows,"LR(0) STATES")
+print_box(["From","Symbol","To"],dfa_rows,"DFA")
+print_box(headers,rows,"SLR TABLE")
+input_tokens=[
+    "int","main","(",")","begin",
+    "int","id",",","id",",","id",";",
+    "if","(","id",">","id",")","begin","printf","(","id",")",";","end",
+    "if","(","id",">","id",")","begin","printf","(","id",")",";","end",
+    "if","(","id",">","id",")","begin","printf","(","id",")",";","end",
+    "end"
 ]
-
-def tokenize(code):
-    tokens = []
-    regex = '|'.join(f'(?P<{name}>{pattern})' for name, pattern in token_specification)
-
-    for match in re.finditer(regex, code):
-        kind = match.lastgroup
-        value = match.group()
-
-        if kind == 'ID' and value in KEYWORDS:
-            tokens.append(("KEYWORD", value))
-        elif kind == 'ID':
-            tokens.append(("IDENTIFIER", value))
-        elif kind == 'NUMBER':
-            tokens.append(("NUMBER", value))
-        elif kind == 'OP':
-            tokens.append(("OPERATOR", value))
-        elif kind == 'SYMBOL':
-            tokens.append(("SYMBOL", value))
-        elif kind == 'SKIP':
-            continue
-        else:
-            raise RuntimeError(f"Unexpected token: {value}")
-
-    return tokens
-
-
-# -------------------------------
-# 3. AST NODE
-# -------------------------------
-class ASTNode:
-    def __init__(self, type, value=None, children=None):
-        self.type = type
-        self.value = value
-        self.children = children if children else []
-
-
-# -------------------------------
-# 4. PARSER WITH AST
-# -------------------------------
-class Parser:
-    def __init__(self, tokens):
-        self.tokens = tokens
-        self.pos = 0
-
-    def current(self):
-        return self.tokens[self.pos] if self.pos < len(self.tokens) else ("EOF", "")
-
-    def match(self, expected_type, expected_value=None):
-        tok_type, tok_val = self.current()
-
-        if tok_type == expected_type and (expected_value is None or tok_val == expected_value):
-            self.pos += 1
-            return tok_val
-        else:
-            raise SyntaxError(f"Unexpected token: {tok_type}, {tok_val}")
-
-    def program(self):
-        self.match("KEYWORD", "int")
-        self.match("KEYWORD", "main")
-        self.match("SYMBOL", "(")
-        self.match("SYMBOL", ")")
-        self.match("KEYWORD", "begin")
-
-        decl_node = self.decl()
-        stmt_node = self.stmt_list()
-
-        self.match("KEYWORD", "end")
-
-        return ASTNode("PROGRAM", children=[decl_node, stmt_node])
-
-    def decl(self):
-        self.match("KEYWORD", "int")
-        ids = self.id_list()
-        self.match("SYMBOL", ";")
-        return ASTNode("DECL", children=ids)
-
-    def id_list(self):
-        ids = []
-        ids.append(ASTNode("ID", self.match("IDENTIFIER")))
-        while self.current()[1] == ",":
-            self.match("SYMBOL", ",")
-            ids.append(ASTNode("ID", self.match("IDENTIFIER")))
-        return ids
-
-    def stmt_list(self):
-        stmts = []
-        while self.current()[1] in ("if", "printf"):
-            if self.current()[1] == "if":
-                stmts.append(self.if_stmt())
-            elif self.current()[1] == "printf":
-                stmts.append(self.print_stmt())
-        return ASTNode("STMT_LIST", children=stmts)
-
-    def if_stmt(self):
-        self.match("KEYWORD", "if")
-        self.match("SYMBOL", "(")
-
-        left = self.expr()
-        op = self.match("OPERATOR")
-        right = self.expr()
-
-        self.match("SYMBOL", ")")
-        self.match("KEYWORD", "begin")
-
-        body = self.stmt_list()
-
-        self.match("KEYWORD", "end")
-
-        return ASTNode("IF", value=op, children=[left, right, body])
-
-    def print_stmt(self):
-        self.match("KEYWORD", "printf")
-        self.match("SYMBOL", "(")
-
-        expr_node = self.expr()
-
-        self.match("SYMBOL", ")")
-        self.match("SYMBOL", ";")
-
-        return ASTNode("PRINT", children=[expr_node])
-
-    def expr(self):
-        tok_type, tok_val = self.current()
-
-        if tok_type == "IDENTIFIER":
-            return ASTNode("ID", self.match("IDENTIFIER"))
-        elif tok_type == "NUMBER":
-            return ASTNode("NUM", self.match("NUMBER"))
-        else:
-            raise SyntaxError("Invalid expression")
-
-
-# -------------------------------
-# 5. TREE PRINT (TEXT)
-# -------------------------------
-def print_tree(node, indent="", last=True):
-    print(indent, end="")
-    if last:
-        print("└── ", end="")
-        indent += "    "
+root=parse(input_tokens)
+draw_parse_tree(root)
+#SAMPLE EXECUTION
+# INPUT
+n1 = int(input("n1: "))
+n2 = int(input("n2: "))
+n3 = int(input("n3: "))
+# GIVEN CODES
+def execute_program(n1, n2, n3):
+    outputs = []
+    if n1 > n2:
+        outputs.append(n1)
+    if n2 > n3:
+        outputs.append(n2)
+    if n1 > n3:
+        outputs.append(n3)
+    return outputs
+given_outputs = execute_program(n1, n2, n3)
+# CORRECT CODES
+def execute_correct_program(n1, n2, n3):
+    if n1 > n2 and n1 > n3:
+        return n1
+    elif n2 > n1 and n2 > n3:
+        return n2
     else:
-        print("├── ", end="")
-        indent += "│   "
-
-    print(f"{node.type}: {node.value if node.value else ''}")
-
-    for i, child in enumerate(node.children):
-        is_last = i == len(node.children) - 1
-        if isinstance(child, list):
-            for j, c in enumerate(child):
-                print_tree(c, indent, j == len(child) - 1)
-        else:
-            print_tree(child, indent, is_last)
-
-
-# -------------------------------
-# 6. GRAPHVIZ AST VISUALIZATION
-# -------------------------------
-def visualize_ast(node):
-    dot = Digraph(comment="AST")
-
-    def add_nodes(n, parent=None):
-        node_id = str(id(n))
-        label = f"{n.type}\n{n.value if n.value else ''}"
-
-        dot.node(node_id, label)
-
-        if parent:
-            dot.edge(parent, node_id)
-
-        for child in n.children:
-            if isinstance(child, list):
-                for c in child:
-                    add_nodes(c, node_id)
-            else:
-                add_nodes(child, node_id)
-
-    add_nodes(node)
-    dot.render("AST_Output", format="png", view=True)
-
-
-# -------------------------------
-# 7. SEMANTIC ANALYZER
-# -------------------------------
-class SemanticAnalyzer:
-    def __init__(self):
-        self.symbol_table = {}
-
-    def analyze(self, node):
-        if node.type == "PROGRAM":
-            for child in node.children:
-                self.analyze(child)
-
-        elif node.type == "DECL":
-            for var in node.children:
-                self.symbol_table[var.value] = "int"
-
-        elif node.type == "IF":
-            left, right, body = node.children
-
-            if self.get_type(left) != self.get_type(right):
-                raise TypeError("Type mismatch")
-
-            self.analyze(body)
-
-        elif node.type == "STMT_LIST":
-            for stmt in node.children:
-                self.analyze(stmt)
-
-        elif node.type == "PRINT":
-            self.get_type(node.children[0])
-
-    def get_type(self, node):
-        if node.type == "NUM":
-            return "int"
-        elif node.type == "ID":
-            if node.value not in self.symbol_table:
-                raise NameError(f"Undeclared variable: {node.value}")
-            return self.symbol_table[node.value]
-
-
-# -------------------------------
-# 8. INTERPRETER
-# -------------------------------
-class Interpreter:
-    def __init__(self, symbol_table):
-        self.env = {var: 0 for var in symbol_table}
-
-    def set_values(self, values):
-        self.env.update(values)
-
-    def eval_expr(self, node):
-        if node.type == "NUM":
-            return int(node.value)
-        elif node.type == "ID":
-            return self.env[node.value]
-
-    def exec(self, node):
-        if node.type == "PROGRAM":
-            for child in node.children:
-                self.exec(child)
-
-        elif node.type == "STMT_LIST":
-            for stmt in node.children:
-                self.exec(stmt)
-
-        elif node.type == "IF":
-            left, right, body = node.children
-            op = node.value
-
-            lval = self.eval_expr(left)
-            rval = self.eval_expr(right)
-
-            condition = False
-            if op == ">":
-                condition = lval > rval
-            elif op == "<":
-                condition = lval < rval
-            elif op == "==":
-                condition = lval == rval
-
-            if condition:
-                self.exec(body)
-
-        elif node.type == "PRINT":
-            value = self.eval_expr(node.children[0])
-            print("LARGEST VALUE IS :", value)
-
-
-# -------------------------------
-# 9. RUN EVERYTHING
-# -------------------------------
-tokens = tokenize(source_code)
-
-parser = Parser(tokens)
-ast = parser.program()
-
-print("\nPARSE TREE:")
-print_tree(ast)
-
-#  GRAPHICAL AST
-visualize_ast(ast)
-
-semantic = SemanticAnalyzer()
-semantic.analyze(ast)
-
-print("\nSYMBOL TABLE:")
-print(semantic.symbol_table)
-
-interpreter = Interpreter(semantic.symbol_table)
-
-values = {}
-
-for var in semantic.symbol_table:
-    val = int(input(f"Enter value for {var}: "))
-    values[var] = val
-
-interpreter.set_values(values)
-
-print("\nEXECUTION:")
-interpreter.exec(ast)
+        return n3
+correct_outputs = execute_correct_program(n1, n2, n3)
+#RESULTS
+print("RESULTS:\n------------------------------------------------------------------")
+print(f"n1:{n1}")
+print(f"n2:{n2}")
+print(f"n3:{n3}")
+print(f"Given Output:{str(given_outputs).ljust(20)} ")
+if not given_outputs:print("No output")
+print(f"Correct Output:{str(correct_outputs).ljust(20)} ")
+print("------------------------------------------------------------------")
