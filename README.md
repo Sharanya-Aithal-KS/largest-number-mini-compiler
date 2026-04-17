@@ -175,7 +175,7 @@ begin
 
  <img src="parse_tree.png" width="700"/>
  
-🔹 REJECTED Case & Parse Tree
+🔹 REJECTED Case
 
  <img src="OUTPUTS/Picture18.png" width="700"/>
 
