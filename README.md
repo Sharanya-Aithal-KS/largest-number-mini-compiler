@@ -1,4 +1,4 @@
-## 🧠 Compiler Design Lexical Analyzer + SLR Parser for a Hypothetical Language
+<b>🧠 Compiler Design Lexical Analyzer + SLR Parser for a Hypothetical Language</b>
 
 
 ## 👩‍💻 Author
