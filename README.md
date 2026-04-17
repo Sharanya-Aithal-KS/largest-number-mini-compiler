@@ -132,6 +132,8 @@ begin
 end
 
 
+
+
 ## 🖼️ Compiler Output Results
 
 🔹 Token Table 
