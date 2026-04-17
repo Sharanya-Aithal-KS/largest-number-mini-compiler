@@ -57,8 +57,6 @@ Graphviz – Parse tree visualization
 
 ├── mini_compiler.py       # Main implementation
 
-├── input.txt              # Sample input program
-
 ├── parse_tree.png         # Generated parse tree
 
 ├── README.md              # Project documentation
