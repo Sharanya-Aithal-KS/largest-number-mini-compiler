@@ -3,7 +3,7 @@
 Lexical Analyzer + SLR Parser for a Hypothetical Language
 
 
-👩‍💻 Authors
+👩‍💻 Author
 
 Sharanya Aithal KS
 
