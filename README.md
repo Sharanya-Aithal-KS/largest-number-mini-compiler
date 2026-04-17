@@ -1,5 +1,4 @@
-## 🧠 Compiler Design Mini Project
-Lexical Analyzer + SLR Parser for a Hypothetical Language
+## 🧠 Compiler Design Lexical Analyzer + SLR Parser for a Hypothetical Language
 
 
 ## 👩‍💻 Author
