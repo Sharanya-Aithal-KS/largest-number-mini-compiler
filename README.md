@@ -176,7 +176,7 @@ end
  <img src="OUTPUTS/Picture18.png" width="700"/>
 
 
-## 📌 As shown in the results section the program clearly demonstrates both accepted and rejected parsing cases with detailed step tracing.
+<b>📌 As shown in the results section the program clearly demonstrates both accepted and rejected parsing cases with detailed step tracing.</b>
 
 
 ## 🎓 Learning Outcomes
