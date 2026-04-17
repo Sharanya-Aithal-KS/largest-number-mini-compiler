@@ -113,23 +113,23 @@ python mini_compiler.py
 ## 🧪 Sample Input
 int main()
 begin
-    int n1, n2, n3;
+       int n1, n2, n3;
 
-    if ( expr relop expr )
-    begin
-        printf(n1);
-    end
+       if ( expr relop expr )
+       begin
+           printf(n1);
+       end
 
-    if ( expr relop expr )
-    begin
-        printf(n2);
-    end
+       if ( expr relop expr )
+       begin
+           printf(n2);
+       end
 
-    if ( expr relop expr )
-    begin
-        printf(n3);
-    end
-end
+       if ( expr relop expr )
+       begin
+           printf(n3);
+       end
+   end
 
 
 
