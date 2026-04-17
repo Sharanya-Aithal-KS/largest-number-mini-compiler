@@ -20,7 +20,8 @@ The system takes a program written in a hypothetical programming language, analy
 
 Design a compiler (Lexical + Parser phase) for a hypothetical language to:
 
-## 👉 Find the largest number using if statements
+Find the largest number using if statements
+
 
 ## 🚀 Features:
 
