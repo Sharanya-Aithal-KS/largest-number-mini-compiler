@@ -131,20 +131,32 @@ end
 
 
 ## 🖼️ Compiler Output Results
-🔹 Token Table & Initial Output
+
+🔹 Token Table 
+
 <img src="OUTPUTS/Picture1.png" width="700"/> 
 <img src="OUTPUTS/Picture2.png" width="700"/> 
+
 🔹 Grammar
+
 <img src="OUTPUTS/Picture3.png" width="700"/>
+
 🔹FIRST & FOLLOW 
+
 <img src="OUTPUTS/Picture4.png" width="700"/> 
+
 🔹LR(0) States
+
 <img src="OUTPUTS/Picture5.png" width="700"/>
 <img src="OUTPUTS/Picture6.png" width="700"/>
+
 🔹 SLR Parsing Table
+
 <img src="OUTPUTS/Picture7.png" width="700"/> 
 <img src="OUTPUTS/Picture8.png" width="700"/> 
+
 🔹 Parsing Steps (ACCEPTED Case)
+
 <img src="OUTPUTS/Picture9.png" width="700"/>
 <img src="OUTPUTS/Picture10.png" width="700"/> 
 <img src="OUTPUTS/Picture11.png" width="700"/>
@@ -154,9 +166,13 @@ end
 <img src="OUTPUTS/Picture15.png" width="700"/> 
 <img src="OUTPUTS/Picture16.png" width="700"/>
 <img src="OUTPUTS/Picture17.png" width="700"/>
+
 🔹 Parse Tree
+
  <img src="parse_tree.png" width="700"/>
+ 
 🔹 REJECTED Case & Parse Tree
+
  <img src="OUTPUTS/Picture18.png" width="700"/>
 
 
