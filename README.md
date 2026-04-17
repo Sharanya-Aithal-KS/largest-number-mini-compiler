@@ -132,48 +132,19 @@ end
 
 ## 🖼️ Compiler Output Results
 🔹 Token Table & Initial Output
-
-
-
-
-
-
+<img src="OUTPUTS/picture1.png" width="700"/> <img src="OUTPUTS/picture2.png" width="700"/> <img src="OUTPUTS/picture3.png" width="700"/>
 🔹 Grammar, FIRST & FOLLOW
-
-
-
-
-
-
+<img src="OUTPUTS/picture4.png" width="700"/> <img src="OUTPUTS/picture5.png" width="700"/> <img src="OUTPUTS/picture6.png" width="700"/>
 🔹 LR(0) States & DFA
-
-
-
-
-
-
+<img src="OUTPUTS/picture7.png" width="700"/> <img src="OUTPUTS/picture8.png" width="700"/> <img src="OUTPUTS/picture9.png" width="700"/>
 🔹 SLR Parsing Table
-
-
-
-
+<img src="OUTPUTS/picture10.png" width="700"/> <img src="OUTPUTS/picture11.png" width="700"/>
 🔹 Parsing Steps (ACCEPTED Case)
-
-
-
-
-
-
+<img src="OUTPUTS/picture12.png" width="700"/> <img src="OUTPUTS/picture13.png" width="700"/> <img src="OUTPUTS/picture14.png" width="700"/>
 🔹 Parsing Steps (Continued)
-
-
-
-
+<img src="OUTPUTS/picture15.png" width="700"/> <img src="OUTPUTS/picture16.png" width="700"/>
 🔹 REJECTED Case & Parse Tree
-
-
-
-
+<img src="OUTPUTS/picture17.png" width="700"/> <img src="OUTPUTS/picture18.png" width="700"/>
 
 
 ## 📌 As shown in the results section the program clearly demonstrates both accepted and rejected parsing cases with detailed step tracing.
