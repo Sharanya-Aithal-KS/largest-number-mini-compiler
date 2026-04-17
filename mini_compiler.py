@@ -206,6 +206,7 @@ def parse(tokens):
     i=0
     steps=[]
     node_stack=[]
+    accepted = False  
     while True:
         state=int(stack[-1])
         symbol=tokens[i]
@@ -238,17 +239,20 @@ def parse(tokens):
             if goto_state is not None:
                 stack.append(str(goto_state))
             else:
-                steps.append([stack_str,input_str,"ERROR"])
+                steps.append([stack_str,input_str,"REJECT"])
                 break
         elif action=="ACC":
             steps.append([stack_str,input_str,"ACCEPT"])
+            accepted = True  
             break
         else:
-            steps.append([stack_str,input_str,"ERROR"])
+            steps.append([stack_str,input_str,"REJECT"])
             break
     print_parsing_table(steps)
-    return node_stack[0] if node_stack else None
-# DRAW TREE
+    if accepted:
+        return node_stack[0] if node_stack else None
+    else:
+        return None
 def draw_parse_tree(root):
     dot=Digraph(format='png')
     dot.attr(rankdir='TB')
@@ -264,17 +268,17 @@ code="""
 int main()
 begin
 int n1, n2, n3;
-if ( n1 > n2 )
+if( expr relop expr )
 begin
-printf(n1);
+printf( n1);
 end
-if ( n2 > n3 )
+if ( expr relop expr )
 begin
-printf(n2);
+printf( n2);
 end
-if ( n1 > n3 )
+if( expr relop expr )
 begin
-printf(n3);
+printf( n3);
 end
 end
 """
@@ -283,53 +287,20 @@ print_box(["Lexeme","Token"],tokens,"TOKEN TABLE")
 print_box(["Non-Terminal","Productions"],
           [[k," | ".join(" ".join(p) for p in v)] for k,v in grammar.items()],
           "GRAMMAR")
-print_box(["NT","FIRST","FOLLOW"],
+print_box(["NON-TERMINAL","FIRST","FOLLOW"],
           [[k,FIRST.get(k,""),FOLLOW.get(k,"")] for k in grammar],
           "FIRST FOLLOW")
 print_box(["State","Items"],lr_rows,"LR(0) STATES")
-print_box(["From","Symbol","To"],dfa_rows,"DFA")
+print_box(["From","Symbol","To"],dfa_rows,"PARSE TREE")
 print_box(headers,rows,"SLR TABLE")
 input_tokens=[
-    "int","main","(",")","begin",
+    "int","main","(",")",
     "int","id",",","id",",","id",";",
     "if","(","id",">","id",")","begin","printf","(","id",")",";","end",
     "if","(","id",">","id",")","begin","printf","(","id",")",";","end",
     "if","(","id",">","id",")","begin","printf","(","id",")",";","end",
-    "end"
+    "end"   
 ]
-root=parse(input_tokens)
-draw_parse_tree(root)
-#SAMPLE EXECUTION
-# INPUT
-n1 = int(input("n1: "))
-n2 = int(input("n2: "))
-n3 = int(input("n3: "))
-# GIVEN CODES
-def execute_program(n1, n2, n3):
-    outputs = []
-    if n1 > n2:
-        outputs.append(n1)
-    if n2 > n3:
-        outputs.append(n2)
-    if n1 > n3:
-        outputs.append(n3)
-    return outputs
-given_outputs = execute_program(n1, n2, n3)
-# CORRECT CODES
-def execute_correct_program(n1, n2, n3):
-    if n1 > n2 and n1 > n3:
-        return n1
-    elif n2 > n1 and n2 > n3:
-        return n2
-    else:
-        return n3
-correct_outputs = execute_correct_program(n1, n2, n3)
-#RESULTS
-print("RESULTS:\n------------------------------------------------------------------")
-print(f"n1:{n1}")
-print(f"n2:{n2}")
-print(f"n3:{n3}")
-print(f"Given Output:{str(given_outputs).ljust(20)} ")
-if not given_outputs:print("No output")
-print(f"Correct Output:{str(correct_outputs).ljust(20)} ")
-print("------------------------------------------------------------------")
+root = parse(input_tokens)
+if root:print("\nInput Accepted → Parse tree constructed.\n");draw_parse_tree(root)
+else:print("\nInput Rejected → Parse tree not constructed.\n")
