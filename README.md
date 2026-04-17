@@ -7,7 +7,6 @@ Lexical Analyzer + SLR Parser for a Hypothetical Language
 
 Sharanya Aithal KS
 
-Sharadhi
 
 
 📌 Overview
